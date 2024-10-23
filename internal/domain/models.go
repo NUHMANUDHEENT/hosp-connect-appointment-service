@@ -25,3 +25,17 @@ type Availability struct {
 	DoctorName string
 	DateTime   time.Time
 }
+type VideoTreatment struct {
+	gorm.Model
+	VideoTreatmentId string
+	AppointmentId    int 
+	Appointment      Appointment
+}
+type AppointmentEvent struct {
+	AppointmentId   int
+	Email string
+	VideoURL string
+	DoctorId        string
+	AppointmentDate string
+	Type            string
+}

@@ -6,6 +6,7 @@ import (
 	"time"
 
 	pb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/appointment"
+	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/domain"
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/service"
 )
 
@@ -66,9 +67,16 @@ func (h *AppoinmentServiceClient) ConfirmAppointment(ctx context.Context, req *p
 
 	// Log the received time to ensure it's correct
 	fmt.Println("Received appointment time:", appointmentTime, "for doctor:", req.DoctorId)
-
+	fmt.Println("type", req.Type)
+	appointment := domain.Appointment{
+		DoctorId:         req.DoctorId,
+		PatientId:        req.PatientId,
+		AppointmentTime:  appointmentTime,
+		SpecializationId: req.SpecializationId,
+		Type:             req.Type,
+	}
 	// Continue the rest of the logic
-	appointment, err := h.service.ConfirmAppointment(req.PatientId, req.DoctorId, appointmentTime, 1)
+	resp, err := h.service.ConfirmAppointment(appointment)
 	if err != nil {
 		return &pb.ConfirmAppointmentResponse{
 			Status:     "fail",
@@ -81,7 +89,7 @@ func (h *AppoinmentServiceClient) ConfirmAppointment(ctx context.Context, req *p
 		Message:    "Appointment successfully confirmed",
 		StatusCode: 200,
 		Status:     "success",
-		PaymentUrl: appointment,
+		PaymentUrl: resp,
 	}, nil
 }
 func (h *AppoinmentServiceClient) GetUpcomingAppointments(ctx context.Context, req *pb.GetAppointmentsRequest) (*pb.GetAppointmentsResponse, error) {
@@ -111,7 +119,18 @@ func (h *AppoinmentServiceClient) GetUpcomingAppointments(ctx context.Context, r
 		Appointments: upcomingAppointments,
 	}, nil
 }
-func (d *AppoinmentServiceClient) CreateRoomForVideoTreatment(ctx context.Context, req *pb.VideoRoomRequest) (*pb.VideoRoomResponse,error){
-	room, err := d.service.CreateRoomForVideoTreatment(req)
-	
+func (d *AppoinmentServiceClient) CreateRoomForVideoTreatment(ctx context.Context, req *pb.VideoRoomRequest) (*pb.VideoRoomResponse, error) {
+	room, err := d.service.CreateRoomForVideoTreatment(req.PatientId, req.DoctorId, req.SpecializationId)
+	if err != nil {
+		return &pb.VideoRoomResponse{
+			StatusCode: "400",
+			Status:     "fail",
+			Message:    err.Error(),
+		}, nil
+	}
+	return &pb.VideoRoomResponse{
+		StatusCode: "200",
+		Status:     "success",
+		RoomUrl:    room,
+	}, nil
 }

@@ -8,8 +8,11 @@ import (
 
 	"github.com/NUHMANUDHEENT/hosp-connect-pb/proto/appointment"
 	doctorpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/doctor"
+	patientpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/patient"
 	paymentpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/payment"
+	"github.com/google/uuid"
 
+	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/config"
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/domain"
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/repository"
 	"google.golang.org/protobuf/types/known/timestamppb"
@@ -18,7 +21,8 @@ import (
 type AppointmentService interface {
 	CheckAvailability(CategoryId int32, reqtime time.Time) ([]domain.Availability, error)
 	CheckAvailabilityByDoctorId(doctorID string) (*appointment.CheckAvailabilityByDoctorIdResponse, error)
-	ConfirmAppointment(patientId string, doctorId string, reqTime time.Time, specializationId int32) (string, error)
+	ConfirmAppointment(appointment domain.Appointment) (string, error)
+	CreateRoomForVideoTreatment(patientId, doctorId string, specializationId int64) (string, error)
 	GetUpcomingAppointments(patientId string) ([]domain.Appointment, error)
 }
 
@@ -26,15 +30,17 @@ type appointmentService struct {
 	repo          repository.AppointmentRepository
 	DoctorClient  doctorpb.DoctorServiceClient
 	PaymentClient paymentpb.PaymentServiceClient
+	PatientClient patientpb.PatientServiceClient
 }
 
 // Initialize appointment service with gRPC client
-func NewAppoinmentService(repo repository.AppointmentRepository, DoctorClient doctorpb.DoctorServiceClient, paymentClient paymentpb.PaymentServiceClient) AppointmentService {
+func NewAppoinmentService(repo repository.AppointmentRepository, DoctorClient doctorpb.DoctorServiceClient, paymentClient paymentpb.PaymentServiceClient, patientClient patientpb.PatientServiceClient) AppointmentService {
 
 	return &appointmentService{
 		repo:          repo,
 		DoctorClient:  DoctorClient,
 		PaymentClient: paymentClient,
+		PatientClient: patientClient,
 	}
 }
 func (a *appointmentService) CheckAvailability(CategoryId int32, reqtime time.Time) ([]domain.Availability, error) {
@@ -84,7 +90,7 @@ func (s *appointmentService) CheckAvailabilityByDoctorId(doctorID string) (*appo
 	}
 	return availability, nil
 }
-func (s *appointmentService) ConfirmAppointment(patientId string, doctorId string, reqTime time.Time, specializationId int32) (string, error) {
+func (s *appointmentService) ConfirmAppointment(appointment domain.Appointment) (string, error) {
 	// Check if the requested time slot is available
 	// available, err := s.DoctorClient.CheckAvailabilityByDoctorId(context.Background(), &doctorpb.CheckAvailabilityByDoctorIdRequest{
 	// 	DoctorId: doctorId,
@@ -97,7 +103,7 @@ func (s *appointmentService) ConfirmAppointment(patientId string, doctorId strin
 	// 		return "", errors.New("doctor is not available on this date")
 	// 	}
 	// }
-	isAvailable, message, err := s.repo.IsDoctorAvailable(doctorId, patientId, reqTime, time.Hour)
+	isAvailable, message, err := s.repo.IsDoctorAvailable(appointment.DoctorId, appointment.PatientId, appointment.AppointmentTime, time.Hour)
 	if err != nil {
 		return "", err
 	}
@@ -112,16 +118,9 @@ func (s *appointmentService) ConfirmAppointment(patientId string, doctorId strin
 	}
 	newAppointmentId := latestAppointmentId + 1
 
-	// Confirm the appointment and generate payment details
-	appointment := &domain.Appointment{
-		AppointmentId:    newAppointmentId, // Set the new incremented appointment ID
-		PatientId:        patientId,
-		DoctorId:         doctorId,
-		AppointmentTime:  reqTime,
-		SpecializationId: specializationId,
-		Duration:         time.Hour, // 1-hour slot
-		Status:           "Confirmed",
-	}
+	appointment.AppointmentId = newAppointmentId
+	appointment.Duration = time.Hour
+	appointment.Status = "Confirmed"
 
 	Resp, err := s.PaymentClient.CreateRazorOrderId(context.Background(), &paymentpb.CreateRazorOrderIdRequest{
 		PatientId:     appointment.PatientId,
@@ -155,11 +154,102 @@ func (s *appointmentService) GetUpcomingAppointments(patientId string) ([]domain
 
 	return appointments, nil
 }
+
 func (d *appointmentService) CreateRoomForVideoTreatment(patientId, doctorId string, specializationId int64) (string, error) {
-     resp,err := d.repo.CheckVideoAppoitment(patientId)
-	 if err != nil {
-		return "",err
-	 }
-	 
-	 
+	check, resp, err := d.repo.CheckVideoAppoitment(patientId)
+	if err != nil {
+		return "", err
+	}
+	if !check {
+		return "", errors.New("patient don't have appointment")
+	}
+	uuid := uuid.New()
+	roomId := uuid.String()
+
+	err = d.repo.SaveVideoAppointment(uuid.String(), resp.AppointmentId, int(specializationId))
+	if err != nil {
+		return "", err
+	}
+	roomURL := fmt.Sprintf("http://localhost:8080/api/v1/doctor/video-call?room=%s", roomId)
+
+	profile, err := d.PatientClient.GetProfile(context.Background(), &patientpb.GetProfileRequest{
+		PatientId: patientId,
+	})
+	if err != nil {
+		return "", err
+	}
+	PatientRoomUrl := fmt.Sprintf("http://localhost:8080/api/v1/patient/video-call?room=%s", roomId)
+	fmt.Printf("http://localhost:8080/api/v1/patient/video-call?room=%s", roomId)
+	err = config.HandleAppointmentNotification(domain.AppointmentEvent{
+		AppointmentId:   resp.AppointmentId,
+		Email:           profile.Email,
+		VideoURL:        PatientRoomUrl,
+		DoctorId:        doctorId,
+		AppointmentDate: resp.AppointmentTime.Format("2016-02-01"),
+		Type:            resp.Type,
+	})
+	if err != nil {
+		errors.New("failed to produce video appointment event")
+	}
+	return roomURL, nil
 }
+
+// // sendEmailToPatient sends an email to the patient with the video call room URL
+// func (d *appointmentService) sendEmailToPatient(patientId string, roomURL string) error {
+// 	// Fetch patient email from the repository
+// 	patientEmail, err := d.repo.GetPatientEmail(patientId)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	// Setup email details
+// 	from := "your_email@gmail.com"
+// 	password := "your_password"
+// 	to := []string{patientEmail}
+// 	smtpHost := "smtp.gmail.com"
+// 	smtpPort := "587"
+
+// 	// Email content
+// 	subject := "Join Your Video Treatment"
+// 	body := fmt.Sprintf("Hello, please join your video treatment by clicking the following link: %s", roomURL)
+// 	message := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s", from, patientEmail, subject, body)
+
+// 	// Set up the email authentication and send the email
+// 	auth := smtp.PlainAuth("", from, password, smtpHost)
+// 	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, []byte(message))
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }
+
+// // notifyDoctor sends an email notification to the doctor (optional)
+// func (d *appointmentService) notifyDoctor(doctorId string, roomURL string) error {
+// 	// Fetch doctor email from the repository
+// 	doctorEmail, err := d.repo.GetDoctorEmail(doctorId)
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	// Setup email details
+// 	from := "your_email@gmail.com"
+// 	password := "your_password"
+// 	to := []string{doctorEmail}
+// 	smtpHost := "smtp.gmail.com"
+// 	smtpPort := "587"
+
+// 	// Email content
+// 	subject := "Join Your Patient Video Call"
+// 	body := fmt.Sprintf("Hello Doctor, your patient is ready for a video treatment. Join here: %s", roomURL)
+// 	message := fmt.Sprintf("From: %s\nTo: %s\nSubject: %s\n\n%s", from, doctorEmail, subject, body)
+
+// 	// Set up the email authentication and send the email
+// 	auth := smtp.PlainAuth("", from, password, smtpHost)
+// 	err = smtp.SendMail(smtpHost+":"+smtpPort, auth, from, to, []byte(message))
+// 	if err != nil {
+// 		return err
+// 	}
+
+// 	return nil
+// }

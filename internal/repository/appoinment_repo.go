@@ -10,10 +10,11 @@ import (
 
 type AppointmentRepository interface {
 	IsDoctorAvailable(doctorId string, patientId string, reqTime time.Time, duration time.Duration) (bool, string, error)
-	ConfirmAppointment(appointment *domain.Appointment) error
+	ConfirmAppointment(appointment domain.Appointment) error
 	GetLatestAppointmentId() (int, error)
 	FetchAppointmentsByPatient(patientId string) ([]domain.Appointment, error)
-	CheckVideoAppoitment(patientId string) (string, error)
+	CheckVideoAppoitment(patientId string) (bool, domain.Appointment, error)
+	SaveVideoAppointment(roomid string, appointmentid, specializationId int) error
 }
 type appointmentRepository struct {
 	db *gorm.DB
@@ -82,8 +83,8 @@ func suggestAlternativeSlot(db *gorm.DB, doctorId string, reqTime time.Time) tim
 }
 
 // ConfirmAppointment saves the confirmed appointment in the database
-func (r *appointmentRepository) ConfirmAppointment(appointment *domain.Appointment) error {
-	return r.db.Create(appointment).Error
+func (r *appointmentRepository) ConfirmAppointment(appointment domain.Appointment) error {
+	return r.db.Create(&appointment).Error
 }
 func (r *appointmentRepository) GetLatestAppointmentId() (int, error) {
 	var latestAppointment domain.Appointment
@@ -107,11 +108,23 @@ func (r *appointmentRepository) FetchAppointmentsByPatient(patientId string) ([]
 	}
 	return appointments, nil
 }
-func (r *appointmentRepository) CheckVideoAppoitment(patientId string) (string, error) {
+func (r *appointmentRepository) CheckVideoAppoitment(patientId string) (bool, domain.Appointment, error) {
 	var appointment domain.Appointment
 	err := r.db.Where("patient_id =? AND type = ? AND appointment_time >?", patientId, "video", time.Now()).First(&appointment).Error
 	if err != nil {
-		return "", errors.New("patient appoitment not found")
+		return false, domain.Appointment{}, errors.New("patient appointment not found")
 	}
-	return "patient appointment available", nil
+	return true, appointment, nil
+}
+func (r *appointmentRepository) SaveVideoAppointment(roomid string, appointmentid, specializationId int) error {
+	var appointment domain.VideoTreatment
+	appointment = domain.VideoTreatment{
+		VideoTreatmentId: roomid,
+		AppointmentId:    appointmentid,
+	}
+	if err := r.db.Create(&appointment).Error; err != nil {
+		return err
+	}
+	return nil
+
 }

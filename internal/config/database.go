@@ -19,7 +19,7 @@ func InitDatabase() *gorm.DB {
 	if err != nil {
 		log.Fatal("failed to connect with postgres......")
 	}
-	err = db.AutoMigrate(&domain.Appointment{})
+	err = db.AutoMigrate(&domain.Appointment{},&domain.VideoTreatment{})
 	if err != nil {
 		log.Fatal(err)
 	}

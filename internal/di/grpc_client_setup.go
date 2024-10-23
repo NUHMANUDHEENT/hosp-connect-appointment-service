@@ -6,6 +6,7 @@ import (
 
 	appointmentpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/appointment"
 	doctorpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/doctor"
+	patientpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/patient"
 	paymentpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/payment"
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/config"
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/handler"
@@ -30,7 +31,7 @@ func GRPCSetup(port string) (net.Listener, *grpc.Server) {
 	appointmentRepo := repository.NewAppoinmentRepository(db)
 
 	// Initialize the gRPC client for the Doctor Service
-	DoctorConn, err := grpc.Dial("localhost:50051", grpc.WithInsecure()) // Doctor client calling
+	userconn, err := grpc.Dial("localhost:50051", grpc.WithInsecure()) // Doctor client calling
 	if err != nil {
 		log.Fatalf("Failed to connect to doctor service: %v", err)
 	}
@@ -39,12 +40,12 @@ func GRPCSetup(port string) (net.Listener, *grpc.Server) {
 		log.Fatalf("Failed to connect to payment service: %v", err)
 	}
 
-
-	doctorClient := doctorpb.NewDoctorServiceClient(DoctorConn)
+	doctorClient := doctorpb.NewDoctorServiceClient(userconn)
 	paymentClient := paymentpb.NewPaymentServiceClient(PaymentConn)
+	patientClient := patientpb.NewPatientServiceClient(userconn)
 
 	// Initialize the appointment service with repository and doctor client
-	appointmentService := service.NewAppoinmentService(appointmentRepo, doctorClient, paymentClient)
+	appointmentService := service.NewAppoinmentService(appointmentRepo, doctorClient, paymentClient, patientClient)
 
 	// Initialize the appointment handler
 	appointmentHandler := handler.NewAppoinmentClient(appointmentService)
