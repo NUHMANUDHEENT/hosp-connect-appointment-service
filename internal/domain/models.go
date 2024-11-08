@@ -12,6 +12,7 @@ type Appointment struct {
 	PatientId        string
 	DoctorId         string
 	SpecializationId int32
+	Specialization   Specialization
 	AppointmentTime  time.Time
 	Duration         time.Duration
 	Status           string
@@ -28,14 +29,29 @@ type Availability struct {
 type VideoTreatment struct {
 	gorm.Model
 	VideoTreatmentId string
-	AppointmentId    int 
+	AppointmentId    int
 	Appointment      Appointment
 }
 type AppointmentEvent struct {
 	AppointmentId   int
-	Email string
-	VideoURL string
+	Email           string
+	VideoURL        string
 	DoctorId        string
 	AppointmentDate string
 	Type            string
+}
+type Specialization struct {
+	gorm.Model
+	Name        string `gorm:"unique"`
+	Description string
+}
+type SpecializationStats struct {
+	Name  string
+	Count int
+}
+type StatisticsData struct {
+	TotalAppointments int
+	TotalRevenue      float64
+	TotalDoctors      int
+	TotalPatients     int
 }

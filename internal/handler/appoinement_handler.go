@@ -3,11 +3,13 @@ package handler
 import (
 	"context"
 	"fmt"
+	"log"
 	"time"
 
 	pb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/appointment"
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/domain"
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/service"
+	"google.golang.org/protobuf/types/known/timestamppb"
 )
 
 type AppoinmentServiceClient struct {
@@ -76,7 +78,7 @@ func (h *AppoinmentServiceClient) ConfirmAppointment(ctx context.Context, req *p
 		Type:             req.Type,
 	}
 	// Continue the rest of the logic
-	resp, err := h.service.ConfirmAppointment(appointment)
+	url, message, err := h.service.ConfirmAppointment(appointment)
 	if err != nil {
 		return &pb.ConfirmAppointmentResponse{
 			Status:     "fail",
@@ -86,10 +88,10 @@ func (h *AppoinmentServiceClient) ConfirmAppointment(ctx context.Context, req *p
 	}
 
 	return &pb.ConfirmAppointmentResponse{
-		Message:    "Appointment successfully confirmed",
+		Message:    message,
 		StatusCode: 200,
 		Status:     "success",
-		PaymentUrl: resp,
+		PaymentUrl: url,
 	}, nil
 }
 func (h *AppoinmentServiceClient) GetUpcomingAppointments(ctx context.Context, req *pb.GetAppointmentsRequest) (*pb.GetAppointmentsResponse, error) {
@@ -106,7 +108,7 @@ func (h *AppoinmentServiceClient) GetUpcomingAppointments(ctx context.Context, r
 		if appointment.AppointmentTime.After(currentTime) {
 			upcomingAppointments = append(upcomingAppointments, &pb.Appointment{
 				AppointmentId:   int64(appointment.AppointmentId),
-				PatientId:       appointment.PatientId,
+				AppointmentType: appointment.Type,
 				DoctorId:        appointment.DoctorId,
 				AppointmentTime: appointment.AppointmentTime.Format(time.ANSIC),
 				Specialization:  int64(appointment.SpecializationId),
@@ -132,5 +134,76 @@ func (d *AppoinmentServiceClient) CreateRoomForVideoTreatment(ctx context.Contex
 		StatusCode: "200",
 		Status:     "success",
 		RoomUrl:    room,
+	}, nil
+}
+func (d *AppoinmentServiceClient) GetAppointmentDetails(ctx context.Context, req *pb.GetAppointmentDetailsRequest) (*pb.GetAppointmentDetailsResponse, error) {
+	appointment, err := d.service.GetAppointmentDetails(req.OrderId)
+	if err != nil {
+		return &pb.GetAppointmentDetailsResponse{
+			StatusCode: 400,
+			Status:     "fail",
+			Message:    err.Error(),
+		}, nil
+	}
+	return &pb.GetAppointmentDetailsResponse{
+		StatusCode:       200,
+		Status:           "success",
+		AppointmentId:    int64(appointment.AppointmentId),
+		AppointmentType:  appointment.Type,
+		DoctorId:         appointment.DoctorId,
+		AppointmentTime:  timestamppb.New(appointment.AppointmentTime),
+		SpecializationId: int64(appointment.SpecializationId),
+	}, nil
+}
+func (a *AppoinmentServiceClient) AddSpecialization(ctx context.Context, req *pb.AddSpecializationRequest) (*pb.StandardResponse, error) {
+	log.Println("Adding specialization with name: ", req.Name)
+	resp, err := a.service.AddSpecialization(req.Name, req.Description)
+	if err != nil {
+		return &pb.StandardResponse{
+			Status:     "fail",
+			Error:      err.Error(),
+			StatusCode: 400,
+		}, nil
+	}
+	return &pb.StandardResponse{
+		Status:     "success",
+		Message:    resp,
+		StatusCode: 200,
+	}, nil
+}
+func (a *AppoinmentServiceClient) FetchStatisticsDetails(ctx context.Context, req *pb.StatisticsRequest) (*pb.StatisticsResponse, error) {
+	special, statics, err := a.service.FetchStatisticsDetails(req.Param)
+	if err != nil {
+		return &pb.StatisticsResponse{}, err
+	}
+	fmt.Println("speccc", special)
+	var specializ []*pb.SpecializationStats
+	for _, s := range special {
+		specializ = append(specializ, &pb.SpecializationStats{
+			AppointmentCount:   int32(s.Count),
+			SpecializationName: s.Name,
+		})
+	}
+	return &pb.StatisticsResponse{
+		TotalPatients:       int32(statics.TotalPatients),
+		TotalDoctors:        int32(statics.TotalDoctors),
+		TotalAppointments:   int32(statics.TotalAppointments),
+		TotalRevenue:        float32(statics.TotalRevenue),
+		SpecializationStats: specializ,
+	}, nil
+}
+func (a *AppoinmentServiceClient) CancelAppointment(ctx context.Context, req *pb.CancelAppointmentRequest) (*pb.CancelAppointmentResponse, error) {
+	resp, err := a.service.CancelAppointment(domain.Appointment{AppointmentId: int(req.AppointmentId), PatientId: req.PatientId}, req.Reason)
+	if err != nil {
+		return &pb.CancelAppointmentResponse{
+			Status:     "fail",
+			StatusCode: "400",
+			Message:    resp,
+		}, nil
+	}
+	return &pb.CancelAppointmentResponse{
+		Status:     "succes",
+		StatusCode: "200",
+		Message:    resp,
 	}, nil
 }
