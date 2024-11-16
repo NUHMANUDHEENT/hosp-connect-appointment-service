@@ -33,5 +33,5 @@ The **Appointment Service** handles the scheduling and management of doctor-pati
 
 ### Clone the Repository
 ```bash
-git clone https://github.com/your-username/appointment-service.git
+git clone https://github.com/NUHMANUDHEENT/hosp-connect-appointment-service.git
 cd appointment-service
