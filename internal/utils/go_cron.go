@@ -9,7 +9,7 @@ import (
 
 func StartCroneSheduler(serviceInterface service.AppointmentService) {
 	croneSheduler := cron.New()
-	_, err := croneSheduler.AddFunc("12 17 * * *", serviceInterface.SendDialyReminders)
+	_, err := croneSheduler.AddFunc("52 15 * * *", serviceInterface.SendDialyReminders)
 	if err != nil {
 		log.Fatalf("Failed to schedule reminder job: %v", err)
 	}

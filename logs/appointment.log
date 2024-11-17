@@ -22,3 +22,21 @@
 {"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-07T17:12:00+05:30"}
 {"error":"rpc error: code = Unavailable desc = connection error: desc = \"transport: Error while dialing: dial tcp 127.0.0.1:50051: connect: connection refused\"","level":"warning","msg":"Failed to fetch patient profile, skipping reminder","time":"2024-11-07T17:12:00+05:30"}
 {"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-07T17:12:00+05:30"}
+{"Function":"AddSpecialization","Name":"Eye","level":"info","msg":"Adding a new specialization","time":"2024-11-08T16:14:12+05:30"}
+{"error":"ERROR: duplicate key value violates unique constraint \"uni_specializations_name\" (SQLSTATE 23505)","level":"error","msg":"Failed to add specialization","time":"2024-11-08T16:14:12+05:30"}
+{"Function":"AddSpecialization","Name":"Hair","level":"info","msg":"Adding a new specialization","time":"2024-11-08T16:17:08+05:30"}
+{"level":"info","msg":"Specialization added successfully","time":"2024-11-08T16:17:08+05:30"}
+{"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-08T17:12:00+05:30"}
+{"error":"failed to produce appointment event: delivery failed: Local: Message timed out","level":"warning","msg":"Failed to send daily reminder","time":"2024-11-08T17:17:01+05:30"}
+{"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-08T17:17:01+05:30"}
+{"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-09T17:18:00+05:30"}
+{"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-09T17:18:01+05:30"}
+{"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-12T14:13:00+05:30"}
+{"error":"rpc error: code = Unavailable desc = dns: A record lookup error: lookup hosp-connect-user-svc on 127.0.0.53:53: server misbehaving","level":"warning","msg":"Failed to fetch patient profile, skipping reminder","time":"2024-11-12T14:13:00+05:30"}
+{"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-12T14:13:00+05:30"}
+{"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-12T15:50:00+05:30"}
+{"error":"rpc error: code = Unavailable desc = dns: A record lookup error: lookup hosp-connect-user-svc on 127.0.0.53:53: server misbehaving","level":"warning","msg":"Failed to fetch patient profile, skipping reminder","time":"2024-11-12T15:50:00+05:30"}
+{"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-12T15:50:00+05:30"}
+{"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-12T15:52:00+05:30"}
+{"error":"rpc error: code = Unavailable desc = dns: A record lookup error: lookup hosp-connect-user-svc on 127.0.0.53:53: server misbehaving","level":"warning","msg":"Failed to fetch patient profile, skipping reminder","time":"2024-11-12T15:52:00+05:30"}
+{"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-12T15:52:00+05:30"}

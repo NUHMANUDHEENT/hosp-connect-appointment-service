@@ -3,6 +3,7 @@ package config
 import (
 	"log"
 	"net"
+	"os"
 
 	appointmentpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/appointment"
 	doctorpb "github.com/NUHMANUDHEENT/hosp-connect-pb/proto/doctor"
@@ -32,11 +33,11 @@ func GRPCSetup(port string) (net.Listener, *grpc.Server) {
 	appointmentRepo := repository.NewAppoinmentRepository(db)
 
 	// Initialize the gRPC client for the Doctor Service
-	userconn, err := grpc.NewClient("localhost:50051", grpc.WithInsecure())
+	userconn, err := grpc.NewClient(os.Getenv("USER_GRPC_SERVER"), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to connect to doctor service: %v", err)
 	}
-	PaymentConn, err := grpc.NewClient("localhost:50054", grpc.WithInsecure())
+	PaymentConn, err := grpc.NewClient(os.Getenv("PAYMENT_GRPC_SERVER"), grpc.WithInsecure())
 	if err != nil {
 		log.Fatalf("Failed to connect to payment service: %v", err)
 	}
