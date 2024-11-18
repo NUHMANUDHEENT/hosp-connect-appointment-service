@@ -13,18 +13,16 @@ jobs:
     steps:
     - uses: actions/checkout@v4
 
-    # Log in to Docker Hub
-    - name: Log in to Docker Hub
-      run: echo "${{ secrets.DOCKER_PASSWORD }}" | docker login -u "${{ secrets.DOCKER_USERNAME }}" --password-stdin
+    # Log in to DigitalOcean Container Registry
+    - name: Log in to DigitalOcean Registry
+      env:
+        DO_ACCESS_TOKEN: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+      run: echo $DO_ACCESS_TOKEN | docker login registry.digitalocean.com -u doctl --password-stdin
 
-    # Build the Docker image
+    # Build the Docker image for the User Service
     - name: Build the Docker image
-      run: docker build . --file Dockerfile --tag hosp-connect-appt-svc:latest
+      run: docker build . --file Dockerfile --tag registry.digitalocean.com/nuhmanregistry/hosp-connect-user-svc:latest
 
-    # Tag and Push the Docker image to Docker Hub
-    - name: Push Docker image to Docker Hub
-      run: |
-        docker tag hosp-connect-appt-svc:latest ${{ secrets.DOCKER_USERNAME }}/hosp-connect-appt-svc:latest
-        docker push ${{ secrets.DOCKER_USERNAME }}/hosp-connect-appt-svc:latest
-
-        
+    # Push the Docker image to the same DigitalOcean Registry
+    - name: Push Docker image to DigitalOcean Registry
+      run: docker push registry.digitalocean.com/nuhmanregistry/hosp-connect-user-svc:latest
