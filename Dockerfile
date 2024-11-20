@@ -16,5 +16,6 @@ RUN apk --no-cache add ca-certificates
 WORKDIR /app
 
 COPY --from=builder /app/appt_service .
+COPY .env ./
 
 CMD ["./appt_service"]

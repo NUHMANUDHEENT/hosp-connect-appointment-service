@@ -23,9 +23,8 @@ func NewAppoinmentClient(service service.AppointmentService) *AppoinmentServiceC
 	}
 }
 
-// Handler function for checking availability
 func (a *AppoinmentServiceClient) CheckAvailability(ctx context.Context, req *pb.GetAvailabilityRequest) (*pb.GetAvailabilityResponse, error) {
-	// Convert Protobuf Timestamp to Go's time.Time
+
 	requestedTime := req.RequestedDateTime.AsTime()
 	fmt.Println("category", req.CategoryId, req.RequestedDateTime)
 	resp, err := a.service.CheckAvailability(req.CategoryId, requestedTime)
@@ -43,11 +42,10 @@ func (a *AppoinmentServiceClient) CheckAvailability(ctx context.Context, req *pb
 			DoctorName: v.DoctorName,
 		})
 	}
-	// fmt.Println(availabilityResponse)
+
 	return availabilityResponse, nil
 }
 func (h *AppoinmentServiceClient) CheckAvailabilityByDoctorId(ctx context.Context, req *pb.CheckAvailabilityByDoctorIdRequest) (*pb.CheckAvailabilityByDoctorIdResponse, error) {
-	// Call the appointment service to check doctor's availability
 
 	available, err := h.service.CheckAvailabilityByDoctorId(req.DoctorId)
 	if err != nil {
@@ -55,8 +53,7 @@ func (h *AppoinmentServiceClient) CheckAvailabilityByDoctorId(ctx context.Contex
 			Status: "error",
 		}, nil
 	}
-	fmt.Println("availability======", available)
-	// Return the gRPC response
+
 	return &pb.CheckAvailabilityByDoctorIdResponse{
 		Status:             "available",
 		DoctorId:           available.DoctorId,
@@ -64,10 +61,9 @@ func (h *AppoinmentServiceClient) CheckAvailabilityByDoctorId(ctx context.Contex
 	}, nil
 }
 func (h *AppoinmentServiceClient) ConfirmAppointment(ctx context.Context, req *pb.ConfirmAppointmentRequest) (*pb.ConfirmAppointmentResponse, error) {
-	// Convert the protobuf Timestamp to Go's time.Time
+
 	appointmentTime := req.GetConfirmedDateTime().AsTime()
 
-	// Log the received time to ensure it's correct
 	fmt.Println("Received appointment time:", appointmentTime, "for doctor:", req.DoctorId)
 	fmt.Println("type", req.Type)
 	appointment := domain.Appointment{
@@ -77,7 +73,6 @@ func (h *AppoinmentServiceClient) ConfirmAppointment(ctx context.Context, req *p
 		SpecializationId: req.SpecializationId,
 		Type:             req.Type,
 	}
-	// Continue the rest of the logic
 	url, message, err := h.service.ConfirmAppointment(appointment)
 	if err != nil {
 		return &pb.ConfirmAppointmentResponse{
@@ -122,6 +117,7 @@ func (h *AppoinmentServiceClient) GetUpcomingAppointments(ctx context.Context, r
 	}, nil
 }
 func (d *AppoinmentServiceClient) CreateRoomForVideoTreatment(ctx context.Context, req *pb.VideoRoomRequest) (*pb.VideoRoomResponse, error) {
+
 	room, err := d.service.CreateRoomForVideoTreatment(req.PatientId, req.DoctorId, req.SpecializationId)
 	if err != nil {
 		return &pb.VideoRoomResponse{
@@ -130,6 +126,7 @@ func (d *AppoinmentServiceClient) CreateRoomForVideoTreatment(ctx context.Contex
 			Message:    err.Error(),
 		}, nil
 	}
+
 	return &pb.VideoRoomResponse{
 		StatusCode: "200",
 		Status:     "success",
@@ -145,6 +142,7 @@ func (d *AppoinmentServiceClient) GetAppointmentDetails(ctx context.Context, req
 			Message:    err.Error(),
 		}, nil
 	}
+
 	return &pb.GetAppointmentDetailsResponse{
 		StatusCode:       200,
 		Status:           "success",
@@ -156,6 +154,7 @@ func (d *AppoinmentServiceClient) GetAppointmentDetails(ctx context.Context, req
 	}, nil
 }
 func (a *AppoinmentServiceClient) AddSpecialization(ctx context.Context, req *pb.AddSpecializationRequest) (*pb.StandardResponse, error) {
+
 	log.Println("Adding specialization with name: ", req.Name)
 	resp, err := a.service.AddSpecialization(req.Name, req.Description)
 	if err != nil {
@@ -172,6 +171,7 @@ func (a *AppoinmentServiceClient) AddSpecialization(ctx context.Context, req *pb
 	}, nil
 }
 func (a *AppoinmentServiceClient) FetchStatisticsDetails(ctx context.Context, req *pb.StatisticsRequest) (*pb.StatisticsResponse, error) {
+
 	special, statics, err := a.service.FetchStatisticsDetails(req.Param)
 	if err != nil {
 		return &pb.StatisticsResponse{}, err
@@ -184,6 +184,7 @@ func (a *AppoinmentServiceClient) FetchStatisticsDetails(ctx context.Context, re
 			SpecializationName: s.Name,
 		})
 	}
+
 	return &pb.StatisticsResponse{
 		TotalPatients:       int32(statics.TotalPatients),
 		TotalDoctors:        int32(statics.TotalDoctors),
@@ -193,6 +194,7 @@ func (a *AppoinmentServiceClient) FetchStatisticsDetails(ctx context.Context, re
 	}, nil
 }
 func (a *AppoinmentServiceClient) CancelAppointment(ctx context.Context, req *pb.CancelAppointmentRequest) (*pb.CancelAppointmentResponse, error) {
+
 	resp, err := a.service.CancelAppointment(domain.Appointment{AppointmentId: int(req.AppointmentId), PatientId: req.PatientId}, req.Reason)
 	if err != nil {
 		return &pb.CancelAppointmentResponse{
@@ -201,6 +203,7 @@ func (a *AppoinmentServiceClient) CancelAppointment(ctx context.Context, req *pb
 			Message:    resp,
 		}, nil
 	}
+
 	return &pb.CancelAppointmentResponse{
 		Status:     "succes",
 		StatusCode: "200",
