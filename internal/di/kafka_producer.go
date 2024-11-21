@@ -27,7 +27,7 @@ func NewKafkaProducer(broker string) (*KafkaProducer, error) {
 	return &KafkaProducer{writer: writer}, nil
 }
 
-func (kp *KafkaProducer) AppointmentEvent(topic string, event domain.AppointmentEvent) error {
+func (kp *KafkaProducer) AppointmentEvent(topic string,partition int, event domain.AppointmentEvent) error {
 	message, err := json.Marshal(event)
 	if err != nil {
 		log.Println("failed to marshal event:", err)
@@ -36,7 +36,8 @@ func (kp *KafkaProducer) AppointmentEvent(topic string, event domain.Appointment
 
 	msg := kafka.Message{
 		Key:   []byte(strconv.Itoa(event.AppointmentId)), 
-		Value: message,      
+		Value: message,     
+		Partition: partition, 
 	}
 
 	err = kp.writer.WriteMessages(context.Background(), msg)
@@ -63,12 +64,49 @@ func HandleAppointmentNotification(topic string, appevent domain.AppointmentEven
 		Type:            appevent.Type,
 		VideoURL:        appevent.VideoURL,
 	}
-
-	err = kafkaProducer.AppointmentEvent(topic, event)
-	if err != nil {
-		return fmt.Errorf("failed to produce appointment event: %w", err)
+    if topic == "appointment_topic"{
+		err = kafkaProducer.AppointmentEvent("appointment_topic",0, event)
+		if err != nil {
+			return fmt.Errorf("failed to produce appointment event: %w", err)
+		}
+	}else{
+		err = kafkaProducer.AppointmentEvent("appointment_topic",1, event)
+		if err != nil {
+			return fmt.Errorf("failed to produce appointment event: %w", err)
+		}
 	}
 
 	log.Println("Appointment alert event produced successfully to email:", appevent.Email)
 	return nil
+}
+
+func EnsureTopicExists(broker, topic string) error {
+    conn, err := kafka.Dial("tcp", broker)
+    if err != nil {
+        return fmt.Errorf("failed to connect to Kafka broker: %w", err)
+    }
+    defer conn.Close()
+
+    topics, err := conn.ReadPartitions()
+    if err != nil {
+        return fmt.Errorf("failed to read partitions: %w", err)
+    }
+
+    for _, t := range topics {
+        if t.Topic == topic {
+            return nil
+        }
+    }
+
+    // Create the topic if it doesn't exist
+    err = conn.CreateTopics(kafka.TopicConfig{
+        Topic:             topic,
+        NumPartitions:     1,
+        ReplicationFactor: 1,
+    })
+    if err != nil {
+        return fmt.Errorf("failed to create topic: %w", err)
+    }
+
+    return nil
 }
