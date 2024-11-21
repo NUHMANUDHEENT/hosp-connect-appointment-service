@@ -101,8 +101,8 @@ func EnsureTopicExists(broker, topic string) error {
     // Create the topic if it doesn't exist
     err = conn.CreateTopics(kafka.TopicConfig{
         Topic:             topic,
-        NumPartitions:     1,
-        ReplicationFactor: 1,
+        NumPartitions:     3,
+        ReplicationFactor: 2,
     })
     if err != nil {
         return fmt.Errorf("failed to create topic: %w", err)

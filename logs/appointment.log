@@ -40,3 +40,5 @@
 {"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-12T15:52:00+05:30"}
 {"error":"rpc error: code = Unavailable desc = dns: A record lookup error: lookup hosp-connect-user-svc on 127.0.0.53:53: server misbehaving","level":"warning","msg":"Failed to fetch patient profile, skipping reminder","time":"2024-11-12T15:52:00+05:30"}
 {"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-12T15:52:00+05:30"}
+{"level":"info","msg":"Sending daily appointment alerts","time":"2024-11-21T20:39:00+05:30"}
+{"level":"info","msg":"Daily appointment alerts sent","time":"2024-11-21T20:39:00+05:30"}
