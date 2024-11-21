@@ -4,6 +4,7 @@ import (
 	"context"
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/NUHMANUDHEENT/hosp-connect-pb/proto/appointment"
@@ -286,14 +287,14 @@ func (d *appointmentService) CreateRoomForVideoTreatment(patientId, doctorId str
 		return "", err
 	}
 
-	roomURL := fmt.Sprintf("http://localhost:8080/api/v1/doctor/video-call/%s", roomId)
+	roomURL := fmt.Sprintf("http://%s/api/v1/doctor/video-call/%s", os.Getenv("HOST_IP"), roomId)
 	profile, err := d.PatientClient.GetProfile(context.Background(), &patientpb.GetProfileRequest{PatientId: patientId})
 	if err != nil {
 		d.Logger.WithError(err).Error("Failed to fetch patient profile")
 		return "", err
 	}
 
-	PatientRoomUrl := fmt.Sprintf("http://localhost:8080/api/v1/patient/video-call/%s", roomId)
+	PatientRoomUrl := fmt.Sprintf("http://%s/api/v1/patient/video-call/%s", os.Getenv("HOST_IP"), roomId)
 	err = di.HandleAppointmentNotification("appointment_topic", domain.AppointmentEvent{
 		AppointmentId:   resp.AppointmentId,
 		Email:           profile.Email,
