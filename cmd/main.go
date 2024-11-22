@@ -10,7 +10,7 @@ import (
 
 func main() {
 	config.LoadEnv()
-	port := os.Getenv("APPOINTMENT_PORT")
+	port := os.Getenv("APPT_PORT")
 	di.EnsureTopicExists(os.Getenv("KAFKA_BROKER"),"appointment_topic")
 	listener, server := config.GRPCSetup(port)
 	if err := server.Serve(listener); err != nil {

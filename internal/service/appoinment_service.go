@@ -287,14 +287,14 @@ func (d *appointmentService) CreateRoomForVideoTreatment(patientId, doctorId str
 		return "", err
 	}
 
-	roomURL := fmt.Sprintf("http://%s/api/v1/doctor/video-call/%s", os.Getenv("HOST_IP"), roomId)
+	roomURL := fmt.Sprintf("http://%s/api/v1/doctor/video-call/%s", os.Getenv("IP_ADDRESS"), roomId)
 	profile, err := d.PatientClient.GetProfile(context.Background(), &patientpb.GetProfileRequest{PatientId: patientId})
 	if err != nil {
 		d.Logger.WithError(err).Error("Failed to fetch patient profile")
 		return "", err
 	}
 
-	PatientRoomUrl := fmt.Sprintf("http://%s/api/v1/patient/video-call/%s", os.Getenv("HOST_IP"), roomId)
+	PatientRoomUrl := fmt.Sprintf("http://%s/api/v1/patient/video-call/%s", os.Getenv("IP_ADDRESS"), roomId)
 	err = di.HandleAppointmentNotification("appointment_topic", domain.AppointmentEvent{
 		AppointmentId:   resp.AppointmentId,
 		Email:           profile.Email,

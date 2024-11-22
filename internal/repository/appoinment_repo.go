@@ -3,6 +3,7 @@ package repository
 import (
 	"errors"
 	"fmt"
+	"os"
 	"time"
 
 	"github.com/nuhmanudheent/hosp-connect-appointment-service/internal/domain"
@@ -41,7 +42,7 @@ func (r *appointmentRepository) IsDoctorAvailable(doctorId string, patientId str
 		First(&appointment).Error
 	if err == nil {
 		if appointment.Status == "Pending" {
-			return false, "http://localhost:8080/api/v1/payment?orderId=" + appointment.PaymentId, fmt.Sprintf("you have already booked an appointment for this day (%v) but not completed the payment so Please complete payment using belove URL and confirm your shedule!", appointment.AppointmentTime), nil
+			return false, fmt.Sprintf("https://%s/api/v1/payment?orderId=%s", os.Getenv("IP_ADDRESS"), appointment.PaymentId), fmt.Sprintf("you have already booked an appointment for this day (%v) but not completed the payment so Please complete payment using belove URL and confirm your shedule!", appointment.AppointmentTime), nil
 		}
 		return false, "", "", fmt.Errorf("you have already booked an appointment for this day (%v)", appointment.AppointmentTime)
 	}

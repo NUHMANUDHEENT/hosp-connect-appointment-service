@@ -47,7 +47,7 @@ func GRPCSetup(port string) (net.Listener, *grpc.Server) {
 
 	appointmentHandler := handler.NewAppoinmentClient(appointmentService)
 	go utils.StartCroneSheduler(appointmentService)
-	
+
 	server := grpc.NewServer()
 
 	appointmentpb.RegisterAppointmentServiceServer(server, appointmentHandler)
